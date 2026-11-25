@@ -3,3 +3,4 @@ __pycache__/
 .venv/
 venv/
 .env
+backend/app/data/incidents.json.lock

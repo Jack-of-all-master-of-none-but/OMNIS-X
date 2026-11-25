@@ -43,18 +43,29 @@ There are no frontend frameworks or external chart libraries. Incident managemen
 ## Project structure
 
 ```text
-frontend/
+./
 ├── index.html
 ├── README.md
 ├── css/
 │   └── style.css
-└── js/
-    ├── app.js
-    ├── api.js
-    ├── data.js
-    ├── incident-store.js
-    ├── recovery.js
-    └── simulation.js
+├── js/
+│   ├── app.js
+│   ├── api.js
+│   ├── data.js
+│   ├── incident-store.js
+│   ├── recovery.js
+│   └── simulation.js
+└── backend/
+    ├── app.py
+    ├── requirements.txt
+    ├── README.md
+    ├── app/
+    │   ├── __init__.py
+    │   ├── data/incidents.json
+    │   ├── models/catalog.py
+    │   ├── routes/api.py
+    │   └── services/
+    └── tests/
 ```
 
 ## The 12 modeled departments
@@ -188,21 +199,66 @@ Each backend incident stores its own simulation result, recovery plans, restored
 
 ## Run locally
 
-1. In a terminal, start the backend from the `backend` folder:
+### Prerequisites
 
-   ```powershell
-   .\.venv\Scripts\Activate.ps1
-   pip install -r requirements.txt
-   python app.py
-   ```
+- Python 3.9 or later.
+- Visual Studio Code with Live Server, or another static HTTP server.
+- Local ports `5000` (Flask) and `5500` (frontend) available.
 
-2. Open the `OMNIS-X` folder in Visual Studio Code and install the **Live Server** extension if needed.
-3. Right-click `frontend/index.html` and select **Open with Live Server**. Ensure it serves on port `5500` (`http://127.0.0.1:5500`).
-4. Use the dashboard in the browser. Refreshing reloads backend incident and recovery state.
+### Install and start the backend
+
+From the repository root, create a virtual environment and install the backend requirements:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+.\.venv\Scripts\python.exe backend\app.py
+```
+
+Flask listens at `http://127.0.0.1:5000`. Keep that terminal open while using the dashboard.
+
+### Start the frontend
+
+Open the repository root in Visual Studio Code, right-click the root `index.html`, and choose **Open with Live Server**. Configure Live Server to use port `5500`; the expected origin is `http://127.0.0.1:5500` (the backend also allows `http://localhost:5500`). There is no separate `frontend/` directory in this checkout.
 
 Serve the project over HTTP instead of opening `index.html` directly with `file://`; browsers restrict ES module imports from local file URLs.
 
-The backend permits the default Live Server origins on port `5500`. Set `FRONTEND_ORIGINS` before starting Flask if using a different frontend origin.
+### Run backend tests
+
+From the `backend` directory:
+
+```powershell
+..\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Tests use temporary JSON stores and do not write to `backend/app/data/incidents.json`.
+
+## Backend API
+
+All endpoints are prefixed with `/api`:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/health` | Backend health check. |
+| GET | `/departments` | Department catalog. |
+| GET | `/departments/stats` | Baseline department counts. |
+| GET / POST | `/incidents` | List or create incidents. |
+| PATCH | `/incidents/{incident_id}/resolve` | Mark an incident resolved. |
+| DELETE | `/incidents/{incident_id}` | Remove an incident and associated recovery activity. |
+| POST | `/simulations` | Simulate and save an incident's BFS impact. |
+| GET | `/simulations/{incident_id}` | Retrieve a saved simulation. |
+| GET | `/recovery/{incident_id}` | Read stored recovery information without generating plans. |
+| POST | `/recovery/{incident_id}/plans` | Generate and save recovery plans. |
+| POST | `/recovery/{incident_id}/apply` | Revalidate and apply a recovery plan. |
+| GET | `/analytics/overview` | Institutional and incident analytics. |
+| GET | `/analytics/departments` | Department status and restoration analytics. |
+| GET | `/analytics/recovery` | Recovery activity and allocation metrics. |
+| GET | `/analytics/risks` | Deterministic, rule-based department risk estimates. |
+| GET | `/analytics/dependencies` | Dependency reach and catalog-backed single-point analysis. |
+| POST | `/analytics/scenarios` | Compare 1–10 hypothetical scenarios without saving incidents. |
+| GET | `/analytics/export` | Export a current simulated-data snapshot. |
+
+Request bodies are JSON. Invalid requests return a JSON error object with `status`, `message`, and `code`; unexpected errors do not expose stack traces to clients. The development CORS allowlist includes the default Live Server origins on port `5500`. Set `FRONTEND_ORIGINS` before starting Flask if using a different frontend origin.
 
 ## Known limitations and simulated-data disclaimer
 
@@ -210,8 +266,10 @@ The backend permits the default Live Server origins on port `5500`. Set `FRONTEN
 - The application uses predefined graph relationships and rules. It does not provide real-time monitoring, AI prediction, external data ingestion, or validated operational forecasts.
 - The model includes only the 12 departments and operations defined in `data.js`. Affected departments without a modeled operation can be identified but do not receive a generated recovery plan.
 - Capacities and compatibility rules are simplified examples. A feasible plan means it passes the prototype's modeled constraints, not that it is guaranteed to work in a real institution.
-- Standalone scenario LocalStorage is browser- and origin-specific. The backend uses a local JSON file and has no authentication or production-grade concurrent-write controls.
+- Standalone scenario LocalStorage is browser- and origin-specific. The backend uses a local JSON file and has no authentication or multi-host storage coordination. Its file lock protects cooperating local processes sharing the same store file.
 - The institutional health score is a simple average of modeled department status points (operational = 100, warning = 60, failed or affected = 0, with modeled restoration reflected in the current status). It is an explanatory demo metric, not an institutional KPI.
 - Recovery plan search has explicit bounds, so it may not enumerate every possible combination in a larger resource catalog.
+- There is no authentication; the local JSON backend is for a single-machine demonstration, not production multi-user operation.
+- The Flask entry point binds to `127.0.0.1`, and the frontend API base URL in `js/api.js` is `http://127.0.0.1:5000/api`. Both refer to the browser visitor's own machine. Deployment therefore requires a supplied backend URL, a backend bind suitable for the hosting environment, a matching CORS origin, and updating the frontend API client. No production URL or deployment is configured by this repository.
 
 Use the dashboard and exported reports as a hackathon demonstration only, not as a source of live operational decisions.
