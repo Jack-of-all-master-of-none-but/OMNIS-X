@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b1220">
+    <meta name="description" content="OMNIS-X simulated college operations command center">
+    <title>OMNIS-X | Operations Command Center</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <script type="module" src="./js/app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="OMNIS-X command center">
+          <span class="brand-mark" aria-hidden="true">O</span>
+          <span class="brand-copy">
+            <strong>OMNIS-X</strong>
+            <span>Institutional operations</span>
+          </span>
+        </a>
+        <div class="topbar-meta">
+          <span class="simulation-label"><span class="label-dot" aria-hidden="true"></span>SIMULATED DATA</span>
+          <span class="system-state"><span class="state-dot" aria-hidden="true"></span>DEMO ENVIRONMENT</span>
+          <button id="reset-demo" class="secondary-button" type="button">Reset Demo</button>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <section class="page-heading" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow">OVERVIEW <span>/</span> COMMAND CENTER</p>
+            <h1 id="page-title">Institutional command center</h1>
+            <p class="page-description">A simulated operational snapshot across interconnected college departments.</p>
+          </div>
+          <div class="snapshot-chip">
+            <span class="snapshot-icon" aria-hidden="true"></span>
+            <span>DEMO SNAPSHOT</span>
+          </div>
+        </section>
+
+        <p id="app-feedback" class="app-feedback" role="status" hidden></p>
+
+        <section class="metrics-grid" aria-label="Institution status summary">
+          <article class="metric-card metric-total">
+            <div class="metric-heading"><span class="metric-icon icon-building" aria-hidden="true"></span><span>Total departments</span></div>
+            <p class="metric-value" id="total-departments">—</p>
+            <p class="metric-note">Tracked in this demo model</p>
+          </article>
+          <article class="metric-card metric-operational">
+            <div class="metric-heading"><span class="status-marker status-operational" aria-hidden="true"></span><span>Operational</span></div>
+            <p class="metric-value" id="operational-departments">—</p>
+            <p class="metric-note">No reported service disruption</p>
+          </article>
+          <article class="metric-card metric-warning">
+            <div class="metric-heading"><span class="status-marker status-warning" aria-hidden="true"></span><span>Under warning</span></div>
+            <p class="metric-value" id="warning-departments">—</p>
+            <p class="metric-note">Reduced capacity or elevated risk</p>
+          </article>
+          <article class="metric-card metric-failed">
+            <div class="metric-heading"><span class="status-marker status-failed" aria-hidden="true"></span><span>Failed</span></div>
+            <p class="metric-value" id="failed-departments">—</p>
+            <p class="metric-note">Service currently unavailable</p>
+          </article>
+          <article class="metric-card metric-incidents">
+            <div class="metric-heading"><span class="metric-icon icon-alert" aria-hidden="true">!</span><span>Active incidents</span></div>
+            <p class="metric-value" id="active-incidents">—</p>
+            <p class="metric-note">Open incident records</p>
+          </article>
+        </section>
+
+        <section class="incident-section" aria-labelledby="incident-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">SIMULATED INCIDENT LOG</p>
+              <h2 id="incident-title">Incident Management</h2>
+            </div>
+            <p class="section-count" id="incident-history-count">— incidents</p>
+          </div>
+          <p class="incident-intro">
+            Report incidents and keep each impact simulation and recovery allocation attached to its own record.
+            All records and operational effects are simulated.
+          </p>
+          <div class="incident-layout">
+            <form id="incident-form" class="incident-form">
+              <h3>Report an incident</h3>
+              <div class="incident-form-grid">
+                <div class="simulation-control">
+                  <label for="incident-department">Affected department</label>
+                  <select id="incident-department" name="departmentId" required></select>
+                </div>
+                <div class="simulation-control">
+                  <label for="incident-failure-type">Failure type</label>
+                  <select id="incident-failure-type" name="failureType" required></select>
+                </div>
+                <div class="simulation-control">
+                  <label for="incident-severity">Severity</label>
+                  <select id="incident-severity" name="severity" required>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+                <div class="simulation-control incident-description-control">
+                  <label for="incident-description">Description</label>
+                  <textarea id="incident-description" name="description" rows="3" maxlength="500" required></textarea>
+                  <span class="control-help">Maximum 500 characters. This will be saved as simulated demo data.</span>
+                </div>
+              </div>
+              <p id="incident-error" class="simulation-error" role="alert" hidden></p>
+              <button class="primary-button" type="submit">Record incident</button>
+            </form>
+            <div id="incident-history" class="incident-list" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section class="simulation-section" aria-labelledby="simulation-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">RULE-BASED SCENARIO TOOL</p>
+              <h2 id="simulation-title">Cascading Failure Simulation</h2>
+            </div>
+            <span class="simulation-mode-label">SIMULATED · BFS</span>
+          </div>
+          <p class="simulation-intro">
+            Choose a department or an Infrastructure service. The simulation follows the dependency
+            links to show possible downstream disruptions; it is not a real-world prediction.
+          </p>
+          <form id="simulation-form" class="simulation-form">
+            <div class="simulation-control">
+              <label for="simulation-target">Failure scenario</label>
+              <select id="simulation-target" name="simulationTarget" required></select>
+              <span class="control-help">Service scenarios start from the Infrastructure department.</span>
+            </div>
+            <button class="primary-button" type="submit">Run simulation</button>
+          </form>
+          <p id="simulation-error" class="simulation-error" role="alert" hidden></p>
+
+          <section id="simulation-results" class="simulation-results" aria-labelledby="simulation-result-title" aria-live="polite" hidden>
+            <div class="simulation-result-heading">
+              <div>
+                <p class="eyebrow">SIMULATION RESULT</p>
+                <h3 id="simulation-result-title">Failure scenario</h3>
+              </div>
+              <span id="simulation-severity" class="severity-badge"></span>
+            </div>
+            <div class="simulation-metrics" aria-label="Simulation impact statistics">
+              <article class="simulation-metric simulation-initial-metric">
+                <span>Initial failure</span>
+                <strong id="simulation-initial-failure">—</strong>
+                <small>Primary disruption</small>
+              </article>
+              <article class="simulation-metric">
+                <span>Directly affected</span>
+                <strong id="simulation-direct-count">—</strong>
+                <small>One dependency link away</small>
+              </article>
+              <article class="simulation-metric">
+                <span>Indirectly affected</span>
+                <strong id="simulation-indirect-count">—</strong>
+                <small>Further downstream links</small>
+              </article>
+              <article class="simulation-metric">
+                <span>Total affected</span>
+                <strong id="simulation-total-count">—</strong>
+                <small>Includes initial failure</small>
+              </article>
+              <article class="simulation-metric">
+                <span>Institutional impact</span>
+                <strong id="simulation-impact-percent">—</strong>
+                <small>Share of modeled departments</small>
+              </article>
+            </div>
+            <div class="simulation-detail-grid">
+              <section class="simulation-detail-panel" aria-labelledby="propagation-title">
+                <h4 id="propagation-title">Propagation chain</h4>
+                <ol id="simulation-propagation-list" class="propagation-list"></ol>
+              </section>
+              <section class="simulation-detail-panel" aria-labelledby="affected-title">
+                <h4 id="affected-title">Affected departments</h4>
+                <div id="simulation-affected-list" class="affected-list"></div>
+                <p id="simulation-severity-rationale" class="severity-rationale"></p>
+              </section>
+            </div>
+          </section>
+        </section>
+
+        <section id="recovery-section" class="recovery-section" aria-labelledby="recovery-title" hidden>
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">CONSTRAINT-BASED · SIMULATED RULES</p>
+              <h2 id="recovery-title">Recovery Planning</h2>
+            </div>
+            <span class="simulation-mode-label">NO LIVE RESOURCE DATA</span>
+          </div>
+          <p class="recovery-intro">
+            Plans are checked against simulated resource availability, capacity, compatibility,
+            and prior allocations. Applying a plan only restores operations whose requirements pass.
+          </p>
+          <div class="recovery-actions">
+            <button id="generate-recovery-plans" class="primary-button" type="button">
+              Generate recovery plans
+            </button>
+            <p id="recovery-state-message" class="recovery-state-message" role="status">
+              Run a failure simulation to start recovery planning.
+            </p>
+          </div>
+          <p id="recovery-error" class="simulation-error" role="alert" hidden></p>
+
+          <div id="recovery-content" class="recovery-content" hidden>
+            <div class="recovery-plan-grid">
+              <section class="recovery-panel" aria-labelledby="feasible-plans-title">
+                <div class="recovery-panel-heading">
+                  <h3 id="feasible-plans-title">Feasible recovery plans</h3>
+                  <button id="apply-selected-recovery" class="primary-button" type="button" disabled>
+                    Apply selected plan
+                  </button>
+                </div>
+                <div id="recovery-plan-list" class="recovery-plan-list"></div>
+              </section>
+              <section class="recovery-panel" aria-labelledby="rejected-options-title">
+                <div class="recovery-panel-heading">
+                  <h3 id="rejected-options-title">Rejected options and unresolved operations</h3>
+                </div>
+                <div id="recovery-rejected-list" class="recovery-rejected-list"></div>
+              </section>
+            </div>
+
+            <section class="recovery-comparison" aria-labelledby="recovery-comparison-title" aria-live="polite">
+              <div class="recovery-panel-heading">
+                <div>
+                  <p class="eyebrow">BEFORE / AFTER</p>
+                  <h3 id="recovery-comparison-title">Recovery comparison</h3>
+                </div>
+                <p class="comparison-rule">
+                  Demo health rule: operational = 100, warning = 60, failed or affected = 0.
+                </p>
+              </div>
+              <div class="comparison-grid">
+                <article class="comparison-card">
+                  <h4>Before recovery</h4>
+                  <p class="comparison-health">Institutional health <strong id="health-before">—</strong></p>
+                  <dl>
+                    <dt>Failed departments</dt>
+                    <dd id="failed-before">—</dd>
+                    <dt>Affected departments</dt>
+                    <dd id="affected-before">—</dd>
+                    <dt>Unavailable resources</dt>
+                    <dd id="unavailable-before">—</dd>
+                  </dl>
+                </article>
+                <article class="comparison-card comparison-after">
+                  <h4>After recovery</h4>
+                  <p class="comparison-health">Institutional health <strong id="health-after">—</strong></p>
+                  <dl>
+                    <dt>Restored departments</dt>
+                    <dd id="restored-after">—</dd>
+                    <dt>Remaining affected</dt>
+                    <dd id="remaining-after">—</dd>
+                    <dt>Resources consumed</dt>
+                    <dd id="consumed-after">—</dd>
+                  </dl>
+                </article>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="analytics-section" aria-labelledby="analytics-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">SIMULATED OPERATIONAL REPORTING</p>
+              <h2 id="analytics-title">Institutional Analytics</h2>
+            </div>
+            <button id="export-report" class="secondary-button" type="button">Export JSON report</button>
+          </div>
+          <p class="analytics-disclaimer">
+            Metrics are calculated from the current simulated incident, simulation, and recovery records.
+            They are not live institutional data or predictions.
+          </p>
+          <div class="analytics-grid">
+            <article class="analytics-metric"><span>Total incidents</span><strong id="analytics-total-incidents">0</strong></article>
+            <article class="analytics-metric"><span>Active incidents</span><strong id="analytics-active-incidents">0</strong></article>
+            <article class="analytics-metric"><span>Resolved incidents</span><strong id="analytics-resolved-incidents">0</strong></article>
+            <article class="analytics-metric"><span>Direct impact</span><strong id="analytics-direct-impact">0</strong></article>
+            <article class="analytics-metric"><span>Indirect impact</span><strong id="analytics-indirect-impact">0</strong></article>
+            <article class="analytics-metric"><span>Currently affected departments</span><strong id="analytics-affected-departments">0</strong></article>
+            <article class="analytics-metric"><span>Recovery plans generated</span><strong id="analytics-plans-generated">0</strong></article>
+            <article class="analytics-metric"><span>Plans applied</span><strong id="analytics-plans-applied">0</strong></article>
+            <article class="analytics-metric"><span>Operations restored</span><strong id="analytics-operations-restored">0</strong></article>
+            <article class="analytics-metric"><span>Resources consumed</span><strong id="analytics-resources-consumed">0</strong></article>
+            <article class="analytics-metric analytics-health"><span>Institutional health</span><strong id="analytics-health-score">—</strong></article>
+          </div>
+          <div class="analytics-panel-grid">
+            <section class="analytics-panel" aria-labelledby="status-analytics-title">
+              <h3 id="status-analytics-title">Department status</h3>
+              <div id="department-status-chart" class="analytics-bars"></div>
+            </section>
+            <section class="analytics-panel" aria-labelledby="severity-analytics-title">
+              <h3 id="severity-analytics-title">Incident severity</h3>
+              <div id="incident-severity-chart" class="analytics-bars"></div>
+            </section>
+            <section class="analytics-panel" aria-labelledby="affected-analytics-title">
+              <h3 id="affected-analytics-title">Most affected departments</h3>
+              <ol id="most-affected-departments" class="affected-ranking"></ol>
+            </section>
+          </div>
+        </section>
+
+        <section class="dependency-section" aria-labelledby="dependency-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">CONNECTED OPERATIONS</p>
+              <h2 id="dependency-title">Institutional Dependency Network</h2>
+            </div>
+            <p class="section-count" id="dependency-count">— connections</p>
+          </div>
+          <p class="dependency-intro">
+            Select a department to highlight its direct connections. Arrows point from the
+            upstream provider to the department that depends on it.
+          </p>
+          <div class="dependency-layout">
+            <div class="network-column">
+              <div class="network-legend" aria-label="Department status legend">
+                <span><i class="legend-dot legend-operational" aria-hidden="true"></i>Operational</span>
+                <span><i class="legend-dot legend-warning" aria-hidden="true"></i>Warning</span>
+                <span><i class="legend-dot legend-failed" aria-hidden="true"></i>Failed</span>
+                <span><i class="legend-line" aria-hidden="true"></i>Dependency direction</span>
+              </div>
+              <div class="network-viewport" tabindex="0" aria-label="Scrollable dependency network">
+                <svg
+                  id="dependency-network"
+                  class="dependency-svg"
+                  viewBox="0 0 1080 700"
+                  role="group"
+                  aria-labelledby="network-svg-title network-svg-description"
+                >
+                  <title id="network-svg-title">Interactive institutional dependency network</title>
+                  <desc id="network-svg-description">
+                    Twelve department nodes connected by directed upstream-to-downstream dependency links.
+                    Use Tab and Enter or Space to select a department.
+                  </desc>
+                </svg>
+              </div>
+              <p class="network-hint">On smaller screens, scroll horizontally to explore the full network.</p>
+            </div>
+            <aside class="dependency-inspector" aria-live="polite" aria-labelledby="selected-department-name">
+              <p class="eyebrow">SELECTED DEPARTMENT</p>
+              <div class="inspector-heading">
+                <h3 id="selected-department-name">Choose a department</h3>
+                <span id="selected-department-status" class="status-badge"></span>
+              </div>
+              <p id="selected-department-description" class="inspector-description"></p>
+              <section class="relationship-group" aria-labelledby="direct-dependencies-title">
+                <h4 id="direct-dependencies-title">Direct dependencies <span>upstream</span></h4>
+                <ul id="direct-dependency-list" class="relationship-list"></ul>
+              </section>
+              <section class="relationship-group" aria-labelledby="dependent-departments-title">
+                <h4 id="dependent-departments-title">Departments depending on this <span>downstream</span></h4>
+                <ul id="dependent-department-list" class="relationship-list"></ul>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section class="departments-section" aria-labelledby="departments-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">INSTITUTIONAL DIRECTORY</p>
+              <h2 id="departments-title">Department status</h2>
+            </div>
+            <p class="section-count" id="department-count">— departments</p>
+          </div>
+          <div class="department-grid" id="department-grid" aria-live="polite"></div>
+        </section>
+
+        <footer class="page-footer">
+          <span>OMNIS-X · College operations digital twin prototype</span>
+          <span>All displayed information is simulated sample data</span>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>
