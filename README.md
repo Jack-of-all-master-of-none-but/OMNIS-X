@@ -44,17 +44,19 @@ There are no frontend frameworks or external chart libraries. Incident managemen
 
 ```text
 ./
-├── index.html
+├── .gitignore
 ├── README.md
-├── css/
-│   └── style.css
-├── js/
-│   ├── app.js
-│   ├── api.js
-│   ├── data.js
-│   ├── incident-store.js
-│   ├── recovery.js
-│   └── simulation.js
+├── frontend/
+│   ├── index.html
+│   ├── css/
+│   │   └── style.css
+│   └── js/
+│       ├── app.js
+│       ├── api.js
+│       ├── data.js
+│       ├── incident-store.js
+│       ├── recovery.js
+│       └── simulation.js
 └── backend/
     ├── app.py
     ├── requirements.txt
@@ -70,7 +72,7 @@ There are no frontend frameworks or external chart libraries. Incident managemen
 
 ## The 12 modeled departments
 
-Department names, descriptions, baseline statuses, and priorities are defined in `js/data.js`.
+Department names, descriptions, baseline statuses, and priorities are defined in `frontend/js/data.js`.
 
 | Department | Modeled responsibility |
 | --- | --- |
@@ -103,7 +105,7 @@ The SVG network draws arrows from upstream providers to downstream dependents. S
 
 ### BFS failure propagation
 
-`simulateFailure()` in `js/simulation.js` starts at the selected failed department and uses a queue to visit downstream links breadth-first. A visited set ensures each department is processed once, including when a path contains a cycle. The result includes:
+`simulateFailure()` in `frontend/js/simulation.js` starts at the selected failed department and uses a queue to visit downstream links breadth-first. A visited set ensures each department is processed once, including when a path contains a cycle. The result includes:
 
 - The initial failure.
 - Directly affected departments (one link away).
@@ -115,7 +117,7 @@ The demo severity thresholds are **critical** at 50% or more of modeled departme
 
 ## Constraint-based recovery engine
 
-`js/recovery.js` evaluates affected modeled operations against the resource catalog in `js/data.js`. A recovery assignment must satisfy:
+`frontend/js/recovery.js` evaluates affected modeled operations against the resource catalog in `frontend/js/data.js`. A recovery assignment must satisfy:
 
 - Resource availability and status.
 - Total capacity and currently available capacity.
@@ -145,14 +147,14 @@ Institutional Analytics is derived from the current incident records and recover
 
 ### File responsibilities
 
-- **`index.html`** — Dashboard markup, forms, metric containers, analytics panels, and the SVG network element. Loads `js/app.js` as a module and `css/style.css`.
-- **`css/style.css`** — Dark responsive presentation, status colors, layout, and CSS-based analytics bars.
-- **`js/data.js`** — Single source of simulated departments, dependency links, incident failure types, resources, recovery operations, and sample incidents.
-- **`js/api.js`** — Central HTTP client for the Flask health, department, incident, simulation, recovery, and analytics endpoints.
-- **`js/simulation.js`** — Validates and queries the dependency graph; runs BFS simulations and produces structured impact results.
-- **`js/recovery.js`** — Validates resource requirements, generates and ranks plans, applies plans to separate recovery state, and calculates recovery comparisons.
-- **`js/incident-store.js`** — Persists the standalone scenario in LocalStorage and supports the existing client-side report builder.
-- **`js/app.js`** — Connects UI events to the API and frontend modules, maintains the standalone scenario, renders department and network views, incident history, recovery results and analytics, and builds/exports the JSON report.
+- **`frontend/index.html`** — Dashboard markup, forms, metric containers, analytics panels, and the SVG network element. Loads `./js/app.js` as a module and `./css/style.css`.
+- **`frontend/css/style.css`** — Dark responsive presentation, status colors, layout, and CSS-based analytics bars.
+- **`frontend/js/data.js`** — Single source of simulated departments, dependency links, incident failure types, resources, recovery operations, and sample incidents.
+- **`frontend/js/api.js`** — Central HTTP client for the Flask health, department, incident, simulation, recovery, and analytics endpoints.
+- **`frontend/js/simulation.js`** — Validates and queries the dependency graph; runs BFS simulations and produces structured impact results.
+- **`frontend/js/recovery.js`** — Validates resource requirements, generates and ranks plans, applies plans to separate recovery state, and calculates recovery comparisons.
+- **`frontend/js/incident-store.js`** — Persists the standalone scenario in LocalStorage and supports the existing client-side report builder.
+- **`frontend/js/app.js`** — Connects UI events to the API and frontend modules, maintains the standalone scenario, renders department and network views, incident history, recovery results and analytics, and builds/exports the JSON report.
 
 ### Module relationships
 
@@ -161,16 +163,16 @@ Institutional Analytics is derived from the current incident records and recover
 ```mermaid
 flowchart TD
     Person[Administrator] -->|uses forms and controls| UI[Browser dashboard]
-    HTML[index.html] -->|loads| UI
-    CSS[css/style.css] -->|styles| UI
-    UI -->|events and inputs| APP[js/app.js]
-    APP -->|reads definitions| DATA[js/data.js]
-    APP -->|calls graph queries and BFS| SIM[js/simulation.js]
-    APP -->|generates and applies standalone plans| REC[js/recovery.js]
-    APP -->|HTTP requests| API[js/api.js]
+    HTML[frontend/index.html] -->|loads| UI
+    CSS[frontend/css/style.css] -->|styles| UI
+    UI -->|events and inputs| APP[frontend/js/app.js]
+    APP -->|reads definitions| DATA[frontend/js/data.js]
+    APP -->|calls graph queries and BFS| SIM[frontend/js/simulation.js]
+    APP -->|generates and applies standalone plans| REC[frontend/js/recovery.js]
+    APP -->|HTTP requests| API[frontend/js/api.js]
     API <-->|JSON REST API| BACKEND[Flask backend]
     BACKEND -->|incidents, simulations, recovery, analytics| STORE[(Backend JSON store)]
-    APP -->|standalone scenario only| STOREJS[js/incident-store.js]
+    APP -->|standalone scenario only| STOREJS[frontend/js/incident-store.js]
     STOREJS -->|reads shared definitions| DATA
     STOREJS -->|simulates standalone scenario| SIM
     STOREJS -->|plans and recovery state| REC
@@ -219,16 +221,18 @@ Flask listens at `http://127.0.0.1:5000`. Keep that terminal open while using th
 
 ### Start the frontend
 
-Open the repository root in Visual Studio Code, right-click the root `index.html`, and choose **Open with Live Server**. Configure Live Server to use port `5500`; the expected origin is `http://127.0.0.1:5500` (the backend also allows `http://localhost:5500`). There is no separate `frontend/` directory in this checkout.
+Open the repository root in Visual Studio Code, right-click `frontend/index.html`, and choose **Open with Live Server**. Configure Live Server to use port `5500`; the expected origin is `http://127.0.0.1:5500` (the backend also allows `http://localhost:5500`). The frontend files are kept in `frontend/`, separate from the Flask application in `backend/`.
 
-Serve the project over HTTP instead of opening `index.html` directly with `file://`; browsers restrict ES module imports from local file URLs.
+Serve the frontend over HTTP instead of opening `frontend/index.html` directly with `file://`; browsers restrict ES module imports from local file URLs.
 
 ### Run backend tests
 
-From the `backend` directory:
+From the repository root:
 
 ```powershell
+Push-Location backend
 ..\.venv\Scripts\python.exe -m unittest discover -s tests -v
+Pop-Location
 ```
 
 Tests use temporary JSON stores and do not write to `backend/app/data/incidents.json`.
@@ -264,12 +268,12 @@ Request bodies are JSON. Invalid requests return a JSON error object with `statu
 
 - All departments, statuses, dependencies, incident records, resources, capacities, availability, impacts, health scores, and recovery activity are simulated demonstration data. Nothing is obtained from a live college system.
 - The application uses predefined graph relationships and rules. It does not provide real-time monitoring, AI prediction, external data ingestion, or validated operational forecasts.
-- The model includes only the 12 departments and operations defined in `data.js`. Affected departments without a modeled operation can be identified but do not receive a generated recovery plan.
+- The model includes only the 12 departments and operations defined in `frontend/js/data.js`. Affected departments without a modeled operation can be identified but do not receive a generated recovery plan.
 - Capacities and compatibility rules are simplified examples. A feasible plan means it passes the prototype's modeled constraints, not that it is guaranteed to work in a real institution.
 - Standalone scenario LocalStorage is browser- and origin-specific. The backend uses a local JSON file and has no authentication or multi-host storage coordination. Its file lock protects cooperating local processes sharing the same store file.
 - The institutional health score is a simple average of modeled department status points (operational = 100, warning = 60, failed or affected = 0, with modeled restoration reflected in the current status). It is an explanatory demo metric, not an institutional KPI.
 - Recovery plan search has explicit bounds, so it may not enumerate every possible combination in a larger resource catalog.
 - There is no authentication; the local JSON backend is for a single-machine demonstration, not production multi-user operation.
-- The Flask entry point binds to `127.0.0.1`, and the frontend API base URL in `js/api.js` is `http://127.0.0.1:5000/api`. Both refer to the browser visitor's own machine. Deployment therefore requires a supplied backend URL, a backend bind suitable for the hosting environment, a matching CORS origin, and updating the frontend API client. No production URL or deployment is configured by this repository.
+- The Flask entry point binds to `127.0.0.1`, and the frontend API base URL in `frontend/js/api.js` is `http://127.0.0.1:5000/api`. Both refer to the browser visitor's own machine. Deployment therefore requires a supplied backend URL, a backend bind suitable for the hosting environment, a matching CORS origin, and updating the frontend API client. No production URL or deployment is configured by this repository.
 
 Use the dashboard and exported reports as a hackathon demonstration only, not as a source of live operational decisions.
