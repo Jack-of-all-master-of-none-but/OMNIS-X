@@ -7,6 +7,7 @@ from unittest.mock import patch
 from app import create_app
 from app.models.catalog import DEPARTMENTS, OPERATIONS, RESOURCES
 from app.services import store
+from api_test_support import authenticated_client, isolate_test_user
 
 
 class WorkflowAndReliabilityTests(unittest.TestCase):
@@ -15,15 +16,22 @@ class WorkflowAndReliabilityTests(unittest.TestCase):
         self.data_file = Path(self.temporary_directory.name) / "incidents.json"
         self.data_file_patch = patch.object(store, "DATA_FILE", self.data_file)
         self.data_file_patch.start()
-        self.app = create_app()
-        self.app.config.update(TESTING=True)
+        self.user_file_patch, self.user_id = isolate_test_user(self.temporary_directory.name)
+        self.app = create_app({
+            "TESTING": True,
+            "SESSION_FILE_DIR": str(Path(self.temporary_directory.name) / "sessions"),
+        })
 
     def tearDown(self):
+        self.user_file_patch.stop()
         self.data_file_patch.stop()
         self.temporary_directory.cleanup()
 
+    def api_client(self):
+        return authenticated_client(self.app.test_client(), self.user_id)
+
     def create_incident(self, department_id="laboratories", failure_type="equipment_failure", severity="high"):
-        with self.app.test_client() as client:
+        with self.api_client() as client:
             response = client.post(
                 "/api/incidents",
                 json={
@@ -37,13 +45,13 @@ class WorkflowAndReliabilityTests(unittest.TestCase):
         return response.get_json()
 
     def simulate(self, incident_id):
-        with self.app.test_client() as client:
+        with self.api_client() as client:
             response = client.post("/api/simulations", json={"incidentId": incident_id})
         self.assertEqual(response.status_code, 200, response.get_json())
         return response.get_json()
 
     def generate_plans(self, incident_id):
-        with self.app.test_client() as client:
+        with self.api_client() as client:
             response = client.post(f"/api/recovery/{incident_id}/plans")
         self.assertEqual(response.status_code, 200, response.get_json())
         return response.get_json()["recoveryResult"]
@@ -68,7 +76,7 @@ class WorkflowAndReliabilityTests(unittest.TestCase):
                 {"resource-lab-b", "resource-lab-c"},
             )
 
-            with self.app.test_client() as client:
+            with self.api_client() as client:
                 applied = client.post(
                     f"/api/recovery/{incident_id}/apply",
                     json={"planId": plan["id"]},
@@ -89,7 +97,7 @@ class WorkflowAndReliabilityTests(unittest.TestCase):
             self.assertEqual(lab_row["restorationStatus"], "fully_restored")
             self.assertEqual(lab_row["affectedCount"], 0)
 
-            with self.app.test_client() as client:
+            with self.api_client() as client:
                 resolved = client.patch(f"/api/incidents/{incident_id}/resolve")
                 self.assertEqual(resolved.status_code, 200)
                 self.assertEqual(resolved.get_json()["status"], "resolved")
@@ -97,7 +105,7 @@ class WorkflowAndReliabilityTests(unittest.TestCase):
                 self.assertEqual(deleted.status_code, 200)
                 self.assertEqual(client.get("/api/incidents").get_json(), [])
         finally:
-            with self.app.test_client() as client:
+            with self.api_client() as client:
                 if any(item.get("id") == incident_id for item in store.load_state()["incidents"]):
                     client.delete(f"/api/incidents/{incident_id}")
 
@@ -105,7 +113,7 @@ class WorkflowAndReliabilityTests(unittest.TestCase):
         worker_count = 24
 
         def create(index):
-            with self.app.test_client() as client:
+            with self.api_client() as client:
                 return client.post(
                     "/api/incidents",
                     json={
@@ -142,7 +150,7 @@ class WorkflowAndReliabilityTests(unittest.TestCase):
         self.assertEqual(len(events), request_count)
         self.assertTrue(all(event["planCount"] == len(results[0]["plans"]) for event in events))
         unique_plan_ids = {plan["id"] for plan in results[0]["plans"]}
-        with self.app.test_client() as client:
+        with self.api_client() as client:
             metrics = client.get("/api/analytics/recovery").get_json()
         self.assertEqual(metrics["totalRecoveryPlansGenerated"], len(unique_plan_ids))
 
@@ -162,7 +170,7 @@ class WorkflowAndReliabilityTests(unittest.TestCase):
             )["id"]
 
         def apply(incident):
-            with self.app.test_client() as client:
+            with self.api_client() as client:
                 return client.post(
                     f"/api/recovery/{incident['id']}/apply",
                     json={"planId": plan_by_incident[incident["id"]]},
@@ -183,7 +191,7 @@ class WorkflowAndReliabilityTests(unittest.TestCase):
         self.assertEqual(len({item["resourceId"] for item in matching_allocations}), 1)
 
     def test_backend_catalog_regression_counts(self):
-        with self.app.test_client() as client:
+        with self.api_client() as client:
             department_response = client.get("/api/departments")
         self.assertEqual(department_response.status_code, 200)
         department_ids = {department["id"] for department in department_response.get_json()}

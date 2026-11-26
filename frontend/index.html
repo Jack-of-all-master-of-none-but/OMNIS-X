@@ -10,7 +10,35 @@
     <script type="module" src="./js/app.js"></script>
   </head>
   <body>
-    <div class="app-shell">
+    <main id="auth-screen" class="auth-screen" aria-labelledby="auth-title">
+      <section class="auth-panel">
+        <div class="auth-brand">
+          <span class="brand-mark" aria-hidden="true">O</span>
+          <div class="brand-copy">
+            <strong>OMNIS-X</strong>
+            <span>Institutional operations</span>
+          </div>
+        </div>
+        <div class="auth-heading">
+          <p class="eyebrow">SECURE ACCESS</p>
+          <h1 id="auth-title">Sign in to OMNIS-X</h1>
+        </div>
+        <div class="auth-tabs" role="tablist" aria-label="Authentication mode">
+          <button id="auth-login-tab" class="auth-tab is-active" type="button" role="tab" aria-selected="true">Sign in</button>
+          <button id="auth-register-tab" class="auth-tab" type="button" role="tab" aria-selected="false">Create account</button>
+        </div>
+        <form id="auth-form" class="auth-form">
+          <label for="auth-email">Email</label>
+          <input id="auth-email" name="email" type="email" autocomplete="email" required maxlength="254">
+          <label for="auth-password">Password</label>
+          <input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required>
+          <p id="auth-error" class="auth-error" role="alert" hidden></p>
+          <button id="auth-submit" class="primary-button" type="submit">Sign in</button>
+        </form>
+      </section>
+    </main>
+
+    <div class="app-shell" id="app-shell" hidden>
       <header class="topbar">
         <a class="brand" href="./" aria-label="OMNIS-X command center">
           <span class="brand-mark" aria-hidden="true">O</span>
@@ -23,6 +51,7 @@
           <span class="simulation-label"><span class="label-dot" aria-hidden="true"></span>SIMULATED DATA</span>
           <span class="system-state"><span class="state-dot" aria-hidden="true"></span>DEMO ENVIRONMENT</span>
           <button id="reset-demo" class="secondary-button" type="button">Reset Demo</button>
+          <button id="logout-button" class="secondary-button" type="button">Logout</button>
         </div>
       </header>
 

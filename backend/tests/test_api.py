@@ -7,6 +7,7 @@ from unittest.mock import patch
 import app.routes.api as api_routes
 from app import create_app
 from app.services import store
+from api_test_support import authenticated_client, isolate_test_user
 
 
 class ApiTests(unittest.TestCase):
@@ -15,11 +16,15 @@ class ApiTests(unittest.TestCase):
         self.data_file = Path(self.temporary_directory.name) / "incidents.json"
         self.data_file_patch = patch.object(store, "DATA_FILE", self.data_file)
         self.data_file_patch.start()
-        self.app = create_app()
-        self.app.config.update(TESTING=True)
-        self.client = self.app.test_client()
+        self.user_file_patch, self.user_id = isolate_test_user(self.temporary_directory.name)
+        self.app = create_app({
+            "TESTING": True,
+            "SESSION_FILE_DIR": str(Path(self.temporary_directory.name) / "sessions"),
+        })
+        self.client = authenticated_client(self.app.test_client(), self.user_id)
 
     def tearDown(self):
+        self.user_file_patch.stop()
         self.data_file_patch.stop()
         self.temporary_directory.cleanup()
 

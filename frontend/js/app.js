@@ -56,6 +56,18 @@ const incidentHistory = document.querySelector("#incident-history");
 const incidentError = document.querySelector("#incident-error");
 const appFeedback = document.querySelector("#app-feedback");
 const resetDemoButton = document.querySelector("#reset-demo");
+const authScreen = document.querySelector("#auth-screen");
+const appShell = document.querySelector("#app-shell");
+const authLoginTab = document.querySelector("#auth-login-tab");
+const authRegisterTab = document.querySelector("#auth-register-tab");
+const authForm = document.querySelector("#auth-form");
+const authEmail = document.querySelector("#auth-email");
+const authPassword = document.querySelector("#auth-password");
+const authError = document.querySelector("#auth-error");
+const authSubmit = document.querySelector("#auth-submit");
+const authTitle = document.querySelector("#auth-title");
+const logoutButton = document.querySelector("#logout-button");
+let authMode = "login";
 const svgNamespace = "http://www.w3.org/2000/svg";
 const nodeWidth = 214;
 const nodeHeight = 64;
@@ -1926,5 +1938,86 @@ document
   .addEventListener("click", handleGenerateRecoveryPlans);
 recoveryPlanList.addEventListener("click", handleRecoveryPlanSelection);
 applyRecoveryButton.addEventListener("click", handleApplyRecoveryPlan);
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const isLogin = mode === "login";
+  authLoginTab.classList.toggle("is-active", isLogin);
+  authRegisterTab.classList.toggle("is-active", !isLogin);
+  authLoginTab.setAttribute("aria-selected", String(isLogin));
+  authRegisterTab.setAttribute("aria-selected", String(!isLogin));
+  authTitle.textContent = isLogin ? "Sign in to OMNIS-X" : "Create your OMNIS-X account";
+  authSubmit.textContent = isLogin ? "Sign in" : "Create account";
+  authPassword.autocomplete = isLogin ? "current-password" : "new-password";
+  authError.hidden = true;
+}
+
+function showAuthScreen(message = "") {
+  appShell.hidden = true;
+  authScreen.hidden = false;
+  authError.textContent = message;
+  authError.hidden = !message;
+}
+
+function showAuthenticatedDashboard() {
+  authScreen.hidden = true;
+  appShell.hidden = false;
+  setAuthMode("login");
+  initializeBackend();
+}
+
+async function initializeAuthentication() {
+  try {
+    await api.getCurrentUser();
+    showAuthenticatedDashboard();
+  } catch (error) {
+    if (error.status === 401) {
+      showAuthScreen();
+    } else {
+      showAuthScreen("The authentication service is unavailable. Please ensure the OMNIS-X backend is running.");
+    }
+  }
+}
+
+async function handleAuthSubmit(event) {
+  event.preventDefault();
+  authError.hidden = true;
+  authSubmit.disabled = true;
+  const originalLabel = authSubmit.textContent;
+  authSubmit.textContent = authMode === "login" ? "Signing in…" : "Creating account…";
+  try {
+    if (authMode === "login") {
+      await api.login({ email: authEmail.value, password: authPassword.value });
+    } else {
+      await api.register({ email: authEmail.value, password: authPassword.value });
+      await api.login({ email: authEmail.value, password: authPassword.value });
+    }
+    authForm.reset();
+    showAuthenticatedDashboard();
+  } catch (error) {
+    authError.textContent = error.message || "Authentication failed. Please try again.";
+    authError.hidden = false;
+  } finally {
+    authSubmit.disabled = false;
+    authSubmit.textContent = originalLabel;
+  }
+}
+
+async function handleLogout() {
+  try {
+    await api.logout();
+  } catch (error) {
+    showAuthScreen(error.message || "Logout failed. Please try again.");
+    return;
+  }
+  authForm.reset();
+  setAuthMode("login");
+  showAuthScreen();
+}
+
+authLoginTab.addEventListener("click", () => setAuthMode("login"));
+authRegisterTab.addEventListener("click", () => setAuthMode("register"));
+authForm.addEventListener("submit", handleAuthSubmit);
+logoutButton.addEventListener("click", handleLogout);
 renderDashboard();
-initializeBackend();
+initializeAuthentication();

@@ -10,11 +10,20 @@ export class ApiError extends Error {
 }
 
 async function request(path, options = {}) {
-  const headers = { Accept: "application/json" };
+  const headers = { Accept: "application/json", ...(options.headers || {}) };
+  const method = (options.method || "GET").toUpperCase();
   const fetchOptions = {
-    method: options.method || "GET",
+    method,
     headers,
+    credentials: "include",
   };
+  if (
+    !["GET", "HEAD", "OPTIONS", "TRACE"].includes(method) &&
+    !headers["X-CSRFToken"] &&
+    !headers["X-CSRF-Token"]
+  ) {
+    headers["X-CSRFToken"] = await getCsrfToken();
+  }
   if (options.body !== undefined) {
     headers["Content-Type"] = "application/json";
     fetchOptions.body = JSON.stringify(options.body);
@@ -69,7 +78,26 @@ const recoveryPath = (incidentId) =>
 const simulationPath = (incidentId) =>
   `/simulations/${encodeURIComponent(incidentId)}`;
 
+async function getCsrfToken() {
+  const response = await request("/auth/csrf");
+  return response.csrfToken;
+}
+
+async function authRequest(path, body) {
+  const csrfToken = await getCsrfToken();
+  return request(path, {
+    method: "POST",
+    headers: { "X-CSRFToken": csrfToken },
+    body,
+  });
+}
+
 export const api = {
+  getCsrfToken,
+  getCurrentUser: () => request("/auth/me"),
+  register: (credentials) => authRequest("/auth/register", credentials),
+  login: (credentials) => authRequest("/auth/login", credentials),
+  logout: () => authRequest("/auth/logout", {}),
   getHealth: () => request("/health"),
   getDepartments: () => request("/departments"),
   getIncidents: () => request("/incidents"),

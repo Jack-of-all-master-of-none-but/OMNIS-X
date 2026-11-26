@@ -150,11 +150,11 @@ Institutional Analytics is derived from the current incident records and recover
 - **`frontend/index.html`** — Dashboard markup, forms, metric containers, analytics panels, and the SVG network element. Loads `./js/app.js` as a module and `./css/style.css`.
 - **`frontend/css/style.css`** — Dark responsive presentation, status colors, layout, and CSS-based analytics bars.
 - **`frontend/js/data.js`** — Single source of simulated departments, dependency links, incident failure types, resources, recovery operations, and sample incidents.
-- **`frontend/js/api.js`** — Central HTTP client for the Flask health, department, incident, simulation, recovery, and analytics endpoints.
+- **`frontend/js/api.js`** — Credentialed HTTP client for authentication and the Flask department, incident, simulation, recovery, and analytics endpoints; adds CSRF tokens to state-changing requests.
 - **`frontend/js/simulation.js`** — Validates and queries the dependency graph; runs BFS simulations and produces structured impact results.
 - **`frontend/js/recovery.js`** — Validates resource requirements, generates and ranks plans, applies plans to separate recovery state, and calculates recovery comparisons.
 - **`frontend/js/incident-store.js`** — Persists the standalone scenario in LocalStorage and supports the existing client-side report builder.
-- **`frontend/js/app.js`** — Connects UI events to the API and frontend modules, maintains the standalone scenario, renders department and network views, incident history, recovery results and analytics, and builds/exports the JSON report.
+- **`frontend/js/app.js`** — Handles sign-in, registration, session restoration, and logout; connects dashboard events to the API and frontend modules; renders department and network views, incident history, recovery results and analytics, and builds/exports the JSON report.
 
 ### Module relationships
 
@@ -225,6 +225,12 @@ Open the repository root in Visual Studio Code, right-click `frontend/index.html
 
 Serve the frontend over HTTP instead of opening `frontend/index.html` directly with `file://`; browsers restrict ES module imports from local file URLs.
 
+### Sign in and run the demo
+
+On first use, select **Create account** and register with an email address and a password between 8 and 128 characters. Registration creates a standard user account and signs it in; there is no preset demo username or password. On later visits, sign in with that account; the server-side session restores access in the same browser. Use **Logout** to end the session. Standard user accounts can use the dashboard; administrator provisioning is optional and is described in `backend/README.md`.
+
+Dashboard incidents are simulated demo records persisted by the local backend. The standalone scenario tool is stored separately in browser LocalStorage. **Reset Demo** only resets the standalone scenario; it does not clear backend incidents.
+
 ### Run backend tests
 
 From the repository root:
@@ -244,6 +250,11 @@ All endpoints are prefixed with `/api`:
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/health` | Backend health check. |
+| GET | `/auth/csrf` | Public CSRF token endpoint. |
+| POST | `/auth/register` | Public registration; creates a standard user account. |
+| POST | `/auth/login` | Public login; establishes a server-side session. |
+| POST | `/auth/logout` | Ends the current session. |
+| GET | `/auth/me` | Returns the current user or `401` when signed out. |
 | GET | `/departments` | Department catalog. |
 | GET | `/departments/stats` | Baseline department counts. |
 | GET / POST | `/incidents` | List or create incidents. |
@@ -264,16 +275,18 @@ All endpoints are prefixed with `/api`:
 
 Request bodies are JSON. Invalid requests return a JSON error object with `status`, `message`, and `code`; unexpected errors do not expose stack traces to clients. The development CORS allowlist includes the default Live Server origins on port `5500`. Set `FRONTEND_ORIGINS` before starting Flask if using a different frontend origin.
 
+Only `GET /api/health` and the authentication bootstrap endpoints are available without signing in. All other institutional API routes require an authenticated session. State-changing authentication and institutional requests require a CSRF token; the browser client handles this automatically.
+
 ## Known limitations and simulated-data disclaimer
 
 - All departments, statuses, dependencies, incident records, resources, capacities, availability, impacts, health scores, and recovery activity are simulated demonstration data. Nothing is obtained from a live college system.
 - The application uses predefined graph relationships and rules. It does not provide real-time monitoring, AI prediction, external data ingestion, or validated operational forecasts.
 - The model includes only the 12 departments and operations defined in `frontend/js/data.js`. Affected departments without a modeled operation can be identified but do not receive a generated recovery plan.
 - Capacities and compatibility rules are simplified examples. A feasible plan means it passes the prototype's modeled constraints, not that it is guaranteed to work in a real institution.
-- Standalone scenario LocalStorage is browser- and origin-specific. The backend uses a local JSON file and has no authentication or multi-host storage coordination. Its file lock protects cooperating local processes sharing the same store file.
+- Standalone scenario LocalStorage is browser- and origin-specific. The backend uses a local JSON file and server-side sessions; it is intended for a single-machine demonstration and does not provide multi-host storage coordination. Its file lock protects cooperating local processes sharing the same store file.
 - The institutional health score is a simple average of modeled department status points (operational = 100, warning = 60, failed or affected = 0, with modeled restoration reflected in the current status). It is an explanatory demo metric, not an institutional KPI.
 - Recovery plan search has explicit bounds, so it may not enumerate every possible combination in a larger resource catalog.
-- There is no authentication; the local JSON backend is for a single-machine demonstration, not production multi-user operation.
+- Authentication is a basic local email/password flow, not a production identity provider. The prototype does not provide password reset, account recovery, or multi-host session/storage coordination.
 - The Flask entry point binds to `127.0.0.1`, and the frontend API base URL in `frontend/js/api.js` is `http://127.0.0.1:5000/api`. Both refer to the browser visitor's own machine. Deployment therefore requires a supplied backend URL, a backend bind suitable for the hosting environment, a matching CORS origin, and updating the frontend API client. No production URL or deployment is configured by this repository.
 
 Use the dashboard and exported reports as a hackathon demonstration only, not as a source of live operational decisions.
